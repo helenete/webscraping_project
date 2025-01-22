@@ -1,8 +1,9 @@
 import pandas as pd
 import time
 
-from scraping_utils import get_with_api, get_and_scrape_articles
+from scraping_utils import ScrapingUtils
 
+utils = ScrapingUtils()
 # Define queries by theme
 search_queries = {
     "Impact Social": [
@@ -88,7 +89,7 @@ def get_multiple_queries_results(base_queries, num_results_per_query=50):
         print(f"\nTheme search : {theme}")
         for query in queries:
             print(f"\nExecuting the query : {query}")
-            df_temp = get_and_scrape_articles(query, num_results=num_results_per_query)
+            df_temp = utils.get_and_scrape_articles(query, num_results=num_results_per_query)
             if not df_temp.empty:
                 df_temp['theme'] = theme
                 df_temp['query'] = query
@@ -105,7 +106,7 @@ def get_multiple_queries_results(base_queries, num_results_per_query=50):
 def execute():
     # First scrap
     base_url = "https://api.worldbank.org/v2/country/all/indicator/ST.INT.ARVL"
-    data = get_with_api(base_url, "json", 1000)
+    data = utils.get_with_api(base_url, "json", 1000)
     df = flatten_data_dynamic(data)
     df.to_csv('data_tourism_all.csv', index=False)
 

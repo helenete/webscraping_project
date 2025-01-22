@@ -13,7 +13,56 @@ import random
 class ScrapingUtils:
     def __init__(self) -> None:
         pass
+    
+    def get_and_scrape_articles(self, query, num_results=10):
+        """Search and scrape articles"""
+        articles_data = []
+        successful_scrapes = 0
 
+        try:
+            urls = self.safe_google_search(query, num_results=num_results)
+            total_urls = len(urls)
+            
+            for i, url in enumerate(urls, 1):
+                print(f"Scraping {i}/{total_urls} : {url}")
+                
+                article_data = self.scrape_with_selenium(url)
+                print(article_data)
+                if article_data and article_data['contenu']:
+                    articles_data.append(article_data)
+                    successful_scrapes += 1
+                    
+                # Random delay between requests
+                time.sleep(random.uniform(2, 5))
+                
+            print(f"\nScraping completed : {successful_scrapes}/{total_urls} recovered articles.")
+            
+            df = pd.DataFrame(articles_data)
+            df = df.dropna(subset=['contenu'])
+            df = df.drop_duplicates(subset=['titre', 'contenu'])
+            
+            return df
+            
+        except Exception as e:
+            print(f"Searching error : {str(e)}")
+            return pd.DataFrame()
+    
+    @staticmethod
+    def safe_google_search(query, num_results=10, delay_range=(5, 15)):
+        """
+        Search for URLs one by one with delays to avoid being blocked.
+        """
+        urls = []
+        try:
+            for result in search(query, num_results=num_results):
+                urls.append(result)
+                print(f"Found URL: {result}")
+                time.sleep(random.uniform(*delay_range))
+        except Exception as e:
+            print(f"Error fetching search results: {e}")
+        return urls
+    
+    @staticmethod
     def get_with_api(url, format, res_page):
         """Fetch all data from an API"""
         params = {
@@ -38,8 +87,9 @@ class ScrapingUtils:
 
         print(f"Fetched {len(all_data)} records.")
         return all_data
-        
-    def __scrape_with_selenium(url):
+
+    @staticmethod    
+    def scrape_with_selenium(url):
         """Scrape an article with Selenium"""
         driver = None
         try:
@@ -133,35 +183,3 @@ class ScrapingUtils:
         finally:
             if driver:
                 driver.quit()
-
-    def get_and_scrape_articles(self, query, num_results=10):
-        """Search and scrape articles"""
-        articles_data = []
-        successful_scrapes = 0
-        
-        try:
-            urls = list(search(query, lang='en', num_results=num_results))
-            total_urls = len(urls)
-            
-            for i, url in enumerate(urls, 1):
-                print(f"Scraping {i}/{total_urls} : {url}")
-                
-                article_data = self.__scrape_with_selenium(url)
-                if article_data and article_data['contenu']:
-                    articles_data.append(article_data)
-                    successful_scrapes += 1
-                    
-                # Random delay between requests
-                time.sleep(random.uniform(2, 5))
-                
-            print(f"\nScraping completed : {successful_scrapes}/{total_urls} recovered articles.")
-            
-            df = pd.DataFrame(articles_data)
-            df = df.dropna(subset=['contenu'])
-            df = df.drop_duplicates(subset=['titre', 'contenu'])
-            
-            return df
-            
-        except Exception as e:
-            print(f"Searching error : {str(e)}")
-            return pd.DataFrame()
